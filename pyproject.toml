@@ -1,0 +1,18 @@
+[project]
+name = "dicelint"
+version = "0.1.0"
+description = "A streaming linter for dice notation"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "marym982" }]
+
+[project.scripts]
+dicelint = "dicelint.cli:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["dicelint*"]
