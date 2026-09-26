@@ -22,6 +22,7 @@ MAX_REASONABLE_SIDES = 100_000
 def _check_token(match: re.Match, lineno: int) -> Optional[Finding]:
     count_str = match.group("count")
     sides_str = match.group("sides")
+    modcount_str = match.group("modcount")
     text = match.group(0)
     column = match.start() + 1
 
@@ -45,34 +46,54 @@ def _check_token(match: re.Match, lineno: int) -> Optional[Finding]:
             f"dice count {count} is unreasonably large: {text!r}", text,
         )
 
-    if sides_str == "%":
-        return None
+    if sides_str != "%":
+        if sides_str != "0" and sides_str.startswith("0"):
+            return Finding(
+                lineno, column, "DICE005",
+                f"side count has a leading zero: {text!r}", text,
+            )
 
-    if sides_str != "0" and sides_str.startswith("0"):
-        return Finding(
-            lineno, column, "DICE005",
-            f"side count has a leading zero: {text!r}", text,
-        )
+        sides = int(sides_str)
 
-    sides = int(sides_str)
+        if sides == 0:
+            return Finding(
+                lineno, column, "DICE001",
+                f"die has zero sides: {text!r}", text,
+            )
 
-    if sides == 0:
-        return Finding(
-            lineno, column, "DICE001",
-            f"die has zero sides: {text!r}", text,
-        )
+        if sides == 1:
+            return Finding(
+                lineno, column, "DICE006",
+                f"a d1 always rolls 1, the die is pointless: {text!r}", text,
+            )
 
-    if sides == 1:
-        return Finding(
-            lineno, column, "DICE006",
-            f"a d1 always rolls 1, the die is pointless: {text!r}", text,
-        )
+        if sides > MAX_REASONABLE_SIDES:
+            return Finding(
+                lineno, column, "DICE004",
+                f"side count {sides} is unreasonably large: {text!r}", text,
+            )
 
-    if sides > MAX_REASONABLE_SIDES:
-        return Finding(
-            lineno, column, "DICE004",
-            f"side count {sides} is unreasonably large: {text!r}", text,
-        )
+    if modcount_str is not None:
+        if modcount_str != "0" and modcount_str.startswith("0"):
+            return Finding(
+                lineno, column, "DICE005",
+                f"keep/drop count has a leading zero: {text!r}", text,
+            )
+
+        modcount = int(modcount_str)
+
+        if modcount == 0:
+            return Finding(
+                lineno, column, "DICE007",
+                f"keep/drop modifier keeps or drops zero dice: {text!r}", text,
+            )
+
+        if modcount > count:
+            return Finding(
+                lineno, column, "DICE008",
+                f"keep/drop count {modcount} exceeds the {count} "
+                f"dice rolled: {text!r}", text,
+            )
 
     return None
 

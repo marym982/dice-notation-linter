@@ -54,8 +54,10 @@ $ grep -h damage *.txt | dicelint
 | DICE002 | zero dice are rolled (`0d6`)                           |
 | DICE003 | dice count is unreasonably large (default over 10,000) |
 | DICE004 | side count is unreasonably large (default over 100,000)|
-| DICE005 | a count or side value has a leading zero (`01d6`)      |
+| DICE005 | a count, side, or keep/drop value has a leading zero (`01d6`) |
 | DICE006 | a d1 is rolled, which always comes up 1                |
+| DICE007 | a keep/drop modifier keeps or drops zero dice (`2d20kh0`) |
+| DICE008 | a keep/drop count exceeds the dice rolled (`2d20kh3`)  |
 
 ## Library use
 
@@ -75,8 +77,25 @@ with open("encounter.txt") as f:
 and yields findings as it goes, so a multi-gigabyte log of dice rolls is
 fine to lint directly; nothing is buffered beyond the current line.
 
+## Keep/drop modifiers
+
+Rolls with a keep/drop modifier - `kh` (keep highest), `kl` (keep lowest),
+`dh` (drop highest), `dl` (drop lowest) - followed by a count are
+recognized as part of the same token, and the modifier's count is checked
+against the number of dice actually rolled:
+
+```
+$ cat rolls.txt
+advantage: 2d20kh1
+oops:      4d6kh6
+
+$ dicelint rolls.txt
+rolls.txt:2:8: DICE008 keep/drop count 6 exceeds the 4 dice rolled: '4d6kh6'
+```
+
 ## Known limitations
 
-Notation with keep/drop modifiers (`4d6kh3`, `2d20kl1`) isn't recognized
-yet, so tokens like that are currently skipped rather than checked. See
-the project roadmap for what's planned next.
+A single token is one roll of one die size; `2d6+1d4` is read as two
+separate tokens rather than one combined roll, so a rule that reasons
+about the roll as a whole (rather than each die independently) isn't
+possible yet. See the project roadmap for what's planned next.
